@@ -1,0 +1,31 @@
+name: Tests
+on: 
+  push:
+    branches:
+      - '*'
+      - '!master'
+      - '!main'
+jobs:
+  tests:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Run tests
+        uses: cypress-io/github-action@v2
+        with:
+          build: yarn run build
+          start: yarn run start
+      - name: Set repo env var
+        if: always()
+        run: echo "github_repo=$GITHUB_REPOSITORY" >> $GITHUB_ENV
+      - uses: joelwmale/webhook-action@master
+        if: failure()
+        with:
+          url: https://app.devskills.co/api/assignment-status
+          body: '{"assignmentRepository": "${{ env.github_repo }}","status": "failed"}'
+      - uses: joelwmale/webhook-action@master
+        if: success()
+        with:
+          url: https://app.devskills.co/api/assignment-status
+          body: '{"assignmentRepository": "${{ env.github_repo }}","status": "passed"}'
